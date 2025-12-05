@@ -9,6 +9,8 @@ alojamiento(#id,direccion,pais,direccion,fechaEntrada,fechaSalida,nombre,contact
 
 itinerario(#id,fecha)
 
-foto(#id,nombre,ruta-(id_itinerario))
+foto(#id,nombre,rutaArchivo,-(id_itinerario))
 
-actividad(#id,horaIni
+actividad(#id,horaInicio,ubicacion,direccion,ciudad,pais,duracion-(id_itinerario))
+
+billete(#id,rutaArchivo,nombre,transporte,origen,destino,horaSalida,horaLlegada,compannia,identificador,-(id_itinerario))
