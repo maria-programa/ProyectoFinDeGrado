@@ -1,0 +1,14 @@
+usuario(#id,nombre,nombreUsuario,contrasenna,correoElectronico,imagen,esCreador)
+
+usuario_usuario(#id,-(id_usuario1,id_usuario2))
+usuario_viaje(#id,-(id_usuario,id_viaje))
+
+viaje(#id,fechaCreacion,nombre,fechaInicio,fechaFin,imagen)
+
+alojamiento(#id,direccion,pais,direccion,fechaEntrada,fechaSalida,nombre,contacto,notas,-(id_viaje))
+
+itinerario(#id,fecha)
+
+foto(#id,nombre,ruta-(id_itinerario))
+
+actividad(#id,horaIni
