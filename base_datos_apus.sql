@@ -8,8 +8,7 @@ correo_electronico varchar(50) not null unique,
 nombre_usuario varchar(50) not null unique,
 contrasenna varchar(100) not null,
 nombre varchar(25) not null,
-imagen varchar(100),
-es_creador boolean
+imagen varchar(100)
 );
 
 create table viaje(
@@ -18,7 +17,8 @@ fecha_creacion date not null,
 nombre varchar(100) not null,
 fecha_inicio date not null,
 fecha_fin date not null,
-imagen varchar(100)
+imagen varchar(100),
+creador int
 );
 
 create table usuario_usuario(
@@ -53,7 +53,9 @@ foreign key(id_viaje) references viaje(id)
 
 create table itinerario(
 id int primary key auto_increment,
-fecha date not null
+fecha date not null,
+id_viaje int,
+foreign key(id_viaje) references viaje(id)
 );
 
 create table actividad(
