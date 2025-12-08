@@ -64,6 +64,28 @@ pais varchar(100),
 hora_inicio time not null,
 duracion time,
 id_itinerario int,
-foreign key(id_itinerario)
+foreign key(id_itinerario) references itinerario(id)
+);
 
+create table billete(
+id int primary key auto_increment,
+nombre varchar(100) not null,
+transporte varchar(50),
+origen varchar(150) not null,
+destino varchar(150) not null,
+hora_salida time not null,
+hora_llegada time,
+compannia varchar(100),
+identificador varchar(100),
+ruta_archivo varchar(200) not null,
+id_itinerario int,
+foreign key(id_itinerario) references itinerario(id)
+);
+
+create table foto(
+id int primary key auto_increment,
+nombre varchar(100),
+ruta_archivo varchar(200) not null,
+id_itinerario int,
+foreign key(id_itinerario) references itinerario(id)
 );
