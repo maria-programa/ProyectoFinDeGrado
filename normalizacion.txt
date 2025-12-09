@@ -1,13 +1,13 @@
-usuario(#id,nombre,nombreUsuario,contrasenna,correoElectronico,imagen,esCreador)
+usuario(#id,nombre,nombreUsuario,contrasenna,correoElectronico,imagen)
 
 usuario_usuario(#-(id_usuario1,id_usuario2))
 usuario_viaje(#-(id_usuario,id_viaje))
 
-viaje(#id,fechaCreacion,nombre,fechaInicio,fechaFin,imagen)
+viaje(#id,fechaCreacion,nombre,fechaInicio,fechaFin,imagen,creador)
 
 alojamiento(#id,direccion,pais,ciudad,fechaEntrada,fechaSalida,nombre,contacto,notas,-(id_viaje))
 
-itinerario(#id,fecha)
+itinerario(#id,fecha-(id_viaje))
 
 foto(#id,nombre,rutaArchivo,-(id_itinerario))
 
