@@ -11,6 +11,6 @@ itinerario(#id,fecha-(id_viaje))
 
 foto(#id,nombre,rutaArchivo,-(id_itinerario))
 
-actividad(#id,horaInicio,direccion,ciudad,pais,duracion-(id_itinerario))
+actividad(#id,titulo,descripcion,horaInicio,horaFin,direccion,ciudad,pais,duracion-(id_itinerario))
 
 billete(#id,rutaArchivo,nombre,transporte,origen,destino,horaSalida,horaLlegada,compannia,identificador,-(id_itinerario))
