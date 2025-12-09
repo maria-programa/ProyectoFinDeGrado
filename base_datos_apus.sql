@@ -91,3 +91,23 @@ ruta_archivo varchar(200) not null,
 id_itinerario int,
 foreign key(id_itinerario) references itinerario(id)
 );
+
+delimiter $$
+
+create trigger crear_itinerarios_after_viaje
+    after insert on viaje
+    for each row
+begin
+    declare dia_actual date;
+
+    set dia_actual = new.fecha_inicio;
+
+    while dia_actual <= new.fecha_fin do
+        insert into itinerario (fecha, id_viaje)
+        values (dia_actual, new.id);
+
+        set dia_actual = date_add(dia_actual, interval 1 day);
+end while;
+end $$
+
+delimiter ;
