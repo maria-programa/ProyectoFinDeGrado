@@ -3,3 +3,6 @@ bin/
 .classpath
 .project
 .idea/
+
+#Macos
+.DS_Store
