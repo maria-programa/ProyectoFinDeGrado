@@ -1,5 +1,6 @@
 package bbdd;
 
+import java.sql.Time;
 import java.time.LocalDate;
 
 public class Util {
@@ -59,5 +60,37 @@ public class Util {
 	public static boolean timeValido(String input) {
 		return input.matches("^(?:(?:([01]?\\d|2[0-3]):)?([0-5]?\\d):)?([0-5]?\\d)$");
 	}
+
+	public static boolean rangoTimeValido(String horaInicio, String horaFin) {
+		if (!timeValido(horaInicio) || !timeValido(horaFin)) {
+			System.out.println("El formato de horas no es correcto");
+			return false;
+		}
+
+		Time timeInicio = Time.valueOf(horaInicio);
+		Time timeFin = Time.valueOf(horaFin);
+
+		if (!timeInicio.before(timeFin)) {
+			System.out.println("La hora inicial debe ir antes que la de fin");
+			return false;
+		}
+		return true;
+	}
+
+	public static boolean entraRangoFechas(String fecha, String fechaInicio, String fechaFin) {
+		if (!fechaValida(fecha)) {
+			return false;
+		}
+
+		LocalDate dateInicio = LocalDate.parse(fechaInicio);
+		LocalDate dateFin = LocalDate.parse(fechaFin);
+		LocalDate date = LocalDate.parse(fecha);
+		return (date.isAfter(dateInicio) && date.isBefore(dateFin)) || date.isEqual(dateInicio)
+				|| date.isEqual(dateFin);
+	}
+
+//	public static boolean entraRangoFechas(LocalDate fecha, LocalDate fechaInicio, LocalDate fechaFin) {
+//
+//	}
 
 }

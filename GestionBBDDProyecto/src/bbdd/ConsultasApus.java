@@ -17,7 +17,7 @@ public class ConsultasApus {
 		this.conexion = conexion;
 	}
 
-	public int buscarIdUsuario(String usuario) throws SQLException {
+	public int getIdUsuario(String usuario) throws SQLException {
 		String consulta = "select id from usuario where nombre_usuario = \"" + usuario + "\";";
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ResultSet res = ps.executeQuery();
@@ -25,7 +25,7 @@ public class ConsultasApus {
 		return res.next() ? res.getInt(1) : null;
 	}
 
-	public String buscarCorreoUsuario(String correo) throws SQLException {
+	public String getCorreoUsuario(String correo) throws SQLException {
 		String consulta = "select correo_electronico from usuario where correo_electronico = \"" + correo + "\";";
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ResultSet res = ps.executeQuery();
@@ -33,7 +33,7 @@ public class ConsultasApus {
 		return res.next() ? res.getString(1) : null;
 	}
 
-	public String buscarNombreUsuario(String usuario) throws SQLException {
+	public String getNombreUsuario(String usuario) throws SQLException {
 		String consulta = "select nombre_usuario from usuario where nombre_usuario = \"" + usuario + "\";";
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ResultSet res = ps.executeQuery();
@@ -57,7 +57,7 @@ public class ConsultasApus {
 	}
 
 	public boolean accederUsuario(String usuario, String constrasenna) throws SQLException {
-		if (buscarNombreUsuario(usuario) == null) {
+		if (getNombreUsuario(usuario) == null) {
 			return false;
 		}
 
@@ -109,14 +109,27 @@ public class ConsultasApus {
 		ps.setDate(3, Date.valueOf(fechaInicio));
 		ps.setDate(4, Date.valueOf(fechaFin));
 		ps.setString(5, imagen);
-		ps.setInt(6, buscarIdUsuario(usuario));
+		ps.setInt(6, getIdUsuario(usuario));
 
 		ps.executeUpdate();
 		int idViaje = idUltimoViaje();
 		asociarViajeUsuario(idViaje, usuario);
 		crearItinerarioViaje(idViaje, fechaInicio, fechaFin);
-		System.out.println("Viaje creado con éxito :)");
+	}
 
+	public void editarViaje(int idViaje, String nombre, String fechaInicio, String fechaFin, String imagen)
+			throws SQLException {
+		editarItinerarioViaje(idViaje, fechaInicio, fechaFin);
+
+		String consulta = "update viaje set nombre = ?, fecha_inicio = ?, fecha_fin = ?, imagen = ? where id = ?;";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ps.setString(1, nombre.isEmpty() ? getNombreViaje(idViaje) : nombre);
+		ps.setDate(2, Date.valueOf(fechaInicio.isEmpty() ? getFechaInicioViaje(idViaje) : fechaInicio));
+		ps.setDate(3, Date.valueOf(fechaFin.isEmpty() ? getFechaFinViaje(idViaje) : fechaFin));
+		ps.setString(4, imagen.isEmpty() ? getImagenViaje(idViaje) : imagen);
+		ps.setInt(5, idViaje);
+
+		ps.executeUpdate();
 	}
 
 	public int idUltimoViaje() throws SQLException {
@@ -128,12 +141,111 @@ public class ConsultasApus {
 	}
 
 	public void asociarViajeUsuario(int idViaje, String usuario) throws SQLException {
-		int idUsuario = buscarIdUsuario(usuario);
+		int idUsuario = getIdUsuario(usuario);
 		String consulta = "insert into usuario_viaje values(?,?)";
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ps.setInt(1, idUsuario);
 		ps.setInt(2, idViaje);
 		ps.executeUpdate();
+	}
+
+	public void editarItinerarioViaje(int idViaje, String fechaInicio, String fechaFin) throws SQLException {
+		// Nuevo rango de días
+		LocalDate inicioNuevo = LocalDate.parse(!fechaInicio.isEmpty() ? fechaInicio : getFechaInicioViaje(idViaje));
+		LocalDate finNuevo = LocalDate.parse(!fechaFin.isEmpty() ? fechaFin : getFechaFinViaje(idViaje));
+		int rangoNuevo = (int) inicioNuevo.until(finNuevo, ChronoUnit.DAYS);
+
+		// Rango de días Original
+		LocalDate inicioOriginal = LocalDate.parse(getFechaInicioViaje(idViaje));
+		LocalDate finOriginal = LocalDate.parse(getFechaFinViaje(idViaje));
+
+		// Diferencia de días
+		int diasInicio = (int) inicioNuevo.until(inicioOriginal, ChronoUnit.DAYS);
+		int diasFin = (int) finNuevo.until(finOriginal, ChronoUnit.DAYS);
+
+		// No ha cambiado los días
+		if (diasInicio == 0 && diasFin == 0) {
+			return;
+		}
+
+		// Hacemos delete
+		// cuando el nuevo inicio vaya después del original
+		// y cuando el nuevo fin vaya antes del original
+		String consulta = "";
+		PreparedStatement ps = null;
+
+		if (diasInicio < 0 || diasFin > 0) {
+			consulta = "delete from itinerario where fecha = ? and id_viaje = ?;";
+			ps = conexion.prepareStatement(consulta);
+			if (diasInicio < 0) {
+				for (int i = 0; i < -diasInicio; i++) {
+					Date date = Date.valueOf(inicioOriginal.plusDays(i));
+					if (existeItinerario(date, idViaje)) {
+						ps.setDate(1, date);
+						ps.setInt(2, idViaje);
+						ps.executeUpdate();
+					}
+				}
+			}
+			if (diasFin > 0) {
+				for (int i = 1; i <= diasFin; i++) {
+					Date date = Date.valueOf(finNuevo.plusDays(i));
+					if (existeItinerario(date, idViaje)) {
+						ps.setDate(1, date);
+						ps.setInt(2, idViaje);
+						ps.executeUpdate();
+					}
+				}
+			}
+		}
+
+		if (diasInicio > 0 || diasFin < 0) {
+			consulta = "delete from itinerario where fecha = ? and id_viaje = ?;";
+			ps = conexion.prepareStatement(consulta);
+			if (finNuevo.isBefore(finOriginal)) {
+				for (int i = 0; i < diasFin; i++) {
+					Date date = Date.valueOf(finOriginal.plusDays(i));
+					if (existeItinerario(date, idViaje)) {
+						ps.setDate(1, date);
+						ps.setInt(2, idViaje);
+						ps.executeUpdate();
+					}
+				}
+			}
+
+			if (inicioNuevo.isAfter(inicioOriginal)) {
+				for (int i = 0; i < -diasInicio; i++) {
+					Date date = Date.valueOf(inicioOriginal.plusDays(i));
+					if (existeItinerario(date, idViaje)) {
+						ps.setDate(1, date);
+						ps.setInt(2, idViaje);
+						ps.executeUpdate();
+					}
+				}
+			}
+
+			consulta = "insert into itinerario(fecha, id_viaje) values(?,?);";
+			ps = conexion.prepareStatement(consulta);
+			for (int i = 0; i <= rangoNuevo; i++) {
+				Date date = Date.valueOf(inicioNuevo.plusDays(i));
+				if (!existeItinerario(date, idViaje)) {
+					ps.setDate(1, date);
+					ps.setInt(2, idViaje);
+					ps.executeUpdate();
+				}
+			}
+
+		}
+	}
+
+	public boolean existeItinerario(Date fecha, int idViaje) throws SQLException {
+		String consulta = "select fecha from itinerario where fecha = ? and id_viaje = ?;";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ps.setDate(1, fecha);
+		ps.setInt(2, idViaje);
+		ResultSet res = ps.executeQuery();
+
+		return res.next();
 	}
 
 	public void crearItinerarioViaje(int idViaje, String fechainicio, String fechaFin) throws SQLException {
@@ -152,7 +264,7 @@ public class ConsultasApus {
 	}
 
 	public boolean buscarViajeUsuario(String usuario, int idViaje) throws SQLException {
-		int idUsuario = buscarIdUsuario(usuario);
+		int idUsuario = getIdUsuario(usuario);
 
 		String consulta = "select * from viaje join usuario_viaje on viaje.id=usuario_viaje.id_viaje "
 				+ "where id_usuario = " + idUsuario + " " + "and id_viaje = " + idViaje + ";";
@@ -199,6 +311,57 @@ public class ConsultasApus {
 		ps = conexion.prepareStatement(consulta);
 		ps.executeUpdate();
 
+		consulta = "delete from viaje where id = " + idViaje + ";";
+		ps = conexion.prepareStatement(consulta);
+		ps.executeUpdate();
+
+	}
+
+	public void crearAlojamiento(int idViaje, String nombre, String direccion, String ciudad, String pais,
+			String fechaEntrada, String fechaSalida, String contacto, String notas) throws SQLException {
+		String consulta = "insert into alojamiento(nombre, direccion, ciudad, pais, fecha_entrada, fecha_salida, contacto, notas, id_viaje) "
+				+ "values(?,?,?,?,?,?,?,?,?);";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ps.setString(1, nombre);
+		ps.setString(2, direccion);
+		ps.setString(3, ciudad);
+		ps.setString(4, pais);
+		ps.setDate(5, Date.valueOf(fechaEntrada));
+		ps.setDate(6, Date.valueOf(fechaSalida));
+		ps.setString(7, contacto);
+		ps.setString(8, notas);
+		ps.setInt(9, idViaje);
+
+		ps.executeUpdate();
+	}
+
+	public void mostrarAlojamientos(int idViaje) throws SQLException {
+		String consulta = "select nombre, direccion, ciudad, pais, fecha_entrada, fecha_salida, contacto, notas from alojamiento where id_viaje = "
+				+ idViaje + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+		ResultSetMetaData rmd = res.getMetaData();
+
+		if (!res.next()) {
+			System.out.println("Aún no tiene alojamientos en este viaje.");
+			System.out.println();
+			return;
+		}
+		res.beforeFirst();
+
+		System.out.printf("%20s%20s%20s%20s%20s%20s%20s%20s\n", rmd.getColumnName(1), rmd.getColumnName(2),
+				rmd.getColumnName(3), rmd.getColumnName(4), rmd.getColumnName(5), rmd.getColumnName(6),
+				rmd.getColumnName(7), rmd.getColumnName(8));
+		for (int i = 0; i < 160; i++) {
+			System.out.print("*");
+		}
+		System.out.println();
+		while (res.next()) {
+			System.out.printf("%20s%20s%20s%20s%20s%20s%20s%20s\n", res.getString(1), res.getString(2),
+					res.getString(3), res.getString(4), String.valueOf(res.getDate(5)), String.valueOf(res.getDate(6)),
+					res.getString(7), res.getString(8));
+		}
+		System.out.println();
 	}
 
 	public void mostrarItinerario(int idViaje) throws SQLException {
@@ -219,13 +382,12 @@ public class ConsultasApus {
 		System.out.println();
 	}
 
-	public int idItinerario(int idViaje, String fecha) throws SQLException {
-		String consulta = "select id from itinerario where id_viaje = " + idViaje + " and fecha = \""
-				+ fecha + "\";";
+	public int getIdItinerario(int idViaje, String fecha) throws SQLException {
+		String consulta = "select id from itinerario where id_viaje = " + idViaje + " and fecha = \"" + fecha + "\";";
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ResultSet res = ps.executeQuery();
 
-		return res.next() ? res.getInt(1) : 0;
+		return res.last() ? res.getInt(1) : null;
 	}
 
 	public void crearActividad(String direccion, String ciudad, String pais, String hora, String duracion,
@@ -237,9 +399,46 @@ public class ConsultasApus {
 		ps.setString(2, ciudad);
 		ps.setString(3, pais);
 		ps.setTime(4, Time.valueOf(hora));
-		ps.setTime(5, Time.valueOf(duracion));
+		ps.setTime(5, Time.valueOf(duracion.isEmpty() ? "00:00:00" : duracion));
 		ps.setInt(6, idItinerario);
 		ps.executeUpdate();
+	}
+
+	public boolean mostrarActividad(int idItinerario) throws SQLException {
+		String consulta = "select id, direccion, ciudad, pais, hora_inicio, duracion from actividad "
+				+ "where id_itinerario = " + idItinerario + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+		ResultSetMetaData rmd = res.getMetaData();
+
+		if (!res.next()) {
+			System.out.println("Aún no tiene actividades creadas");
+			System.out.println();
+			return false;
+		}
+		res.beforeFirst();
+
+		System.out.printf("%10s%20s%20s%20s%10s%10s\n", rmd.getColumnName(1), rmd.getColumnName(2),
+				rmd.getColumnName(3), rmd.getColumnName(4), rmd.getColumnName(5), rmd.getColumnName(6));
+		for (int i = 0; i < 10 + 20 + 20 + 20 + 10 + 10; i++) {
+			System.out.print("*");
+		}
+		System.out.println();
+		while (res.next()) {
+			System.out.printf("%10s%20s%20s%20s%10s%10s\n", String.valueOf(res.getInt(1)), res.getString(2),
+					res.getString(3), res.getString(4), String.valueOf(res.getTime(5)), String.valueOf(res.getTime(6)));
+		}
+		System.out.println();
+		return true;
+	}
+
+	public boolean eliminarActividad(int idItinerario, int idActividad) throws SQLException {
+		String consulta = "delete from actividad where id_itinerario = ? and id = ?;";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ps.setInt(1, idItinerario);
+		ps.setInt(2, idActividad);
+
+		return ps.executeUpdate() != 0;
 	}
 
 	public void subirFoto(String nombre, String ruta, int idItinerario) throws SQLException {
@@ -262,7 +461,7 @@ public class ConsultasApus {
 		ps.setString(3, origen);
 		ps.setString(4, destino);
 		ps.setTime(5, Time.valueOf(horaSalida));
-		ps.setTime(6, Time.valueOf(horaLlegada));
+		ps.setTime(6, Time.valueOf(horaLlegada.isEmpty() ? "00:00:00" : horaLlegada));
 		ps.setString(7, compania);
 		ps.setString(8, identificador);
 		ps.setString(9, ruta);
@@ -270,4 +469,35 @@ public class ConsultasApus {
 		ps.executeUpdate();
 	}
 
+	public String getNombreViaje(int idViaje) throws SQLException {
+		String consulta = "select nombre from viaje where id = " + idViaje + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+
+		return res.next() ? res.getString(1) : null;
+	}
+
+	public String getFechaInicioViaje(int idViaje) throws SQLException {
+		String consulta = "select fecha_inicio from viaje where id = " + idViaje + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+
+		return res.next() ? String.valueOf(res.getDate(1)) : null;
+	}
+
+	public String getFechaFinViaje(int idViaje) throws SQLException {
+		String consulta = "select fecha_fin from viaje where id = " + idViaje + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+
+		return res.next() ? String.valueOf(res.getDate(1)) : null;
+	}
+
+	public String getImagenViaje(int idViaje) throws SQLException {
+		String consulta = "select imagen from viaje where id = " + idViaje + ";";
+		PreparedStatement ps = conexion.prepareStatement(consulta);
+		ResultSet res = ps.executeQuery();
+
+		return res.next() ? res.getString(1) : null;
+	}
 }

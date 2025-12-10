@@ -11,6 +11,7 @@ public class Apus {
 	private String user;
 	private int viaje;
 	private boolean exit;
+	private int itinerario;
 
 	public static final String BBDD = "apus";
 	public static final String USER = "root";
@@ -19,17 +20,13 @@ public class Apus {
 
 	public Apus() {
 		try {
-			run();
+			conect();
+			init();
 			exit = false;
 			sc.close();
 		} catch (SQLException e) {
 			System.out.println("NO SE PUDO ESTABLECER CONEXION CON APUS");
 		}
-	}
-
-	private void run() throws SQLException {
-		conect();
-		innit();
 	}
 
 	private void conect() throws SQLException {
@@ -39,7 +36,7 @@ public class Apus {
 		System.out.println("CONECTADO");
 	}
 
-	private void innit() throws SQLException {
+	private void init() throws SQLException {
 		System.out.println("************* BIENVENIDO A APUS *************");
 		sc = new Scanner(System.in);
 		mainMenu();
@@ -90,15 +87,19 @@ public class Apus {
 		boolean access = false;
 		do {
 			System.out.println("------------- Acceso de usuario -------------");
-			System.out.print("Nombre de usuario: ");
-			user = sc.nextLine();
-			System.out.print("Contraseña: ");
-			pwd = sc.nextLine();
+			do {
+				System.out.print("Nombre de usuario: ");
+				user = sc.nextLine();
+			} while (!Util.consultaValida(user));
+			do {
+				System.out.print("Contraseña: ");
+				pwd = sc.nextLine();
+			} while (!Util.consultaValida(pwd));
 
 			// Buscar en la bbdd que exite el usuario con su contrasena
 			access = bbdd.accederUsuario(user, pwd);
 			if (!access) {
-				System.out.println("El usuario o contraseña no son válidos");
+				System.out.println("El usuario o contraseña no son válidos\n");
 			}
 		} while (!access);
 	}
@@ -112,13 +113,13 @@ public class Apus {
 		System.out.println("------------- Registro de usuario -------------");
 		// Comprobar correo válido e inexistente
 		do {
-			System.out.print("Correo electrónico: ");
+			System.out.print("Correo electrónico*: ");
 			correo = sc.nextLine();
 			if (!Util.consultaValida(correo)) {
 				System.out.println("Por favor introduzca un nombre válido");
 				continue;
 			}
-			correoApus = bbdd.buscarCorreoUsuario(correo);
+			correoApus = bbdd.getCorreoUsuario(correo);
 			if (correoApus != null) {
 				System.out.println("El correo ya existe");
 			}
@@ -126,13 +127,13 @@ public class Apus {
 
 		// Comprobar usuario disponible
 		do {
-			System.out.print("Nombre de usuario: ");
+			System.out.print("Nombre de usuario*: ");
 			user = sc.nextLine();
 			if (!Util.consultaValida(user)) {
 				System.out.println("Por favor introduzca un nombre válido");
 				continue;
 			}
-			userApus = bbdd.buscarNombreUsuario(user);
+			userApus = bbdd.getNombreUsuario(user);
 			if (userApus != null) {
 				System.out.println("El nombre de usuario ya existe");
 			}
@@ -140,13 +141,13 @@ public class Apus {
 
 		// Constraseña
 		do {
-			System.out.print("Contraseña: ");
+			System.out.print("Contraseña*: ");
 			pwd = sc.nextLine();
 		} while (!Util.consultaValida(pwd));
 
 		// Nombre o alias
 		do {
-			System.out.print("Nombre: ");
+			System.out.print("Nombre*: ");
 			nombre = sc.nextLine();
 		} while (!Util.consultaValida(nombre));
 
@@ -170,8 +171,8 @@ public class Apus {
 			} else {
 				do {
 					System.out.print("Escoja una opción:\n" + "1.- Crear viaje\n" + "2.- Ver itinerario del viaje\n"
-							+ "3.- Ver Alojamientos\n" + "4.- Editar viaje\n" + "5.- Eliminar viaje\n" + "- Salir -\n"
-							+ "Opcion: ");
+							+ "3.- Añadir Alojamiento\n" + "4.- Ver Alojamientos\n" + "5.- Editar viaje\n"
+							+ "6.- Eliminar viaje\n" + "- Salir -\n" + "Opcion: ");
 					opcion = sc.nextLine().toLowerCase();
 					if (!Util.esOpcionValida(1, 5, opcion)) {
 						System.out.println("Opción no válida");
@@ -190,12 +191,15 @@ public class Apus {
 				}
 				break;
 			case "3":
-
+				addAlojamiento();
 				break;
 			case "4":
-				updateViaje();
+				readAlojamiento();
 				break;
 			case "5":
+				updateViaje();
+				break;
+			case "6":
 				deleteViaje();
 				break;
 			case "salir":
@@ -209,34 +213,41 @@ public class Apus {
 	public void createViaje() throws SQLException {
 		System.out.println("------------- Crear Viaje -------------");
 
-		System.out.print("Nombre: ");
-		String nombreViaje = sc.nextLine();
+		String nombreViaje = "";
+		do {
+			System.out.print("Nombre*: ");
+			nombreViaje = sc.nextLine();
+		} while (nombreViaje.isEmpty() || !Util.consultaValida(nombreViaje));
 
 		String fechaInicioViaje = "";
 		String fechaFinViaje = "";
 		do {
-			System.out.print("Fecha de inicio (aaaa-mm-dd): ");
+			System.out.print("Fecha de inicio* (aaaa-mm-dd): ");
 			fechaInicioViaje = sc.nextLine();
-			System.out.print("Fecha de fin (aaaa-mm-dd): ");
+			System.out.print("Fecha de fin* (aaaa-mm-dd): ");
 			fechaFinViaje = sc.nextLine();
 		} while (!Util.rangoFechasValido(fechaInicioViaje, fechaFinViaje));
 
-		System.out.print("Imagen: ");
-		String urlImagenViaje = sc.nextLine();
-
+		String urlImagenViaje = "";
+		do {
+			System.out.print("Imagen: ");
+			urlImagenViaje = sc.nextLine();
+		} while (!Util.consultaValida(urlImagenViaje));
 		bbdd.crearViaje(user, nombreViaje, fechaInicioViaje, fechaFinViaje, urlImagenViaje);
+		System.out.println("Viaje creado con éxito :)\n");
 	}
 
 	public boolean readViaje() throws SQLException {
 		System.out.println("------------- Ver Viaje -------------");
 		String idViaje = "";
 		do {
-			System.out.print("Id del viaje: ");
+			System.out.print("Id del viaje*: ");
 			idViaje = sc.nextLine();
 		} while (!Util.esEntero(idViaje));
 
 		if (!bbdd.buscarViajeUsuario(user, Integer.parseInt(idViaje))) {
 			System.out.println("El viaje no existe");
+			System.out.println("Volviendo atrás...\n");
 			return false;
 		} else {
 			viaje = Integer.parseInt(idViaje);
@@ -246,29 +257,173 @@ public class Apus {
 		}
 	}
 
-	public void updateViaje() {
+	public void updateViaje() throws SQLException {
+		System.out.println("------------- Editar Viaje -------------");
+		String idViaje = "";
+		do {
+			System.out.print("Id del viaje*: ");
+			idViaje = sc.nextLine();
+		} while (!Util.esEntero(idViaje));
 
+		if (!bbdd.buscarViajeUsuario(user, Integer.parseInt(idViaje))) {
+			System.out.println("El viaje no existe");
+			System.out.println("Volviendo atrás...\n");
+		} else {
+			viaje = Integer.parseInt(idViaje);
+			System.out.println("Accediendo al viaje " + viaje + "...\n");
+			System.out.println("Escribe para editar, en blanco para mantener");
+
+			String nombreViaje = "";
+			do {
+				System.out.print("Nombre: ");
+				nombreViaje = sc.nextLine();
+			} while (!Util.consultaValida(nombreViaje));
+
+			String fechaInicioViaje = "";
+			String fechaFinViaje = "";
+			String fechaInicioBBDD = bbdd.getFechaInicioViaje(viaje);
+			String fechaFinBBDD = bbdd.getFechaFinViaje(viaje);
+			boolean rangoValido = true;
+			do {
+				rangoValido = true;
+				System.out.print("Fecha de inicio (aaaa-mm-dd): ");
+				fechaInicioViaje = sc.nextLine();
+				System.out.print("Fecha de fin (aaaa-mm-dd): ");
+				fechaFinViaje = sc.nextLine();
+
+				if (!fechaInicioViaje.isEmpty() && !fechaFinViaje.isEmpty()
+						&& !Util.rangoFechasValido(fechaInicioViaje, fechaFinViaje)) {
+					rangoValido = false;
+				} else if (!fechaInicioViaje.isEmpty() && fechaFinViaje.isEmpty()
+						&& !Util.rangoFechasValido(fechaInicioViaje, fechaFinBBDD)) {
+					rangoValido = false;
+				} else if (fechaInicioViaje.isEmpty() && !fechaFinViaje.isEmpty()
+						&& !Util.rangoFechasValido(fechaInicioBBDD, fechaFinViaje)) {
+					rangoValido = false;
+				}
+			} while (!rangoValido);
+
+			String urlImagenViaje = "";
+			do {
+				System.out.print("Imagen: ");
+				urlImagenViaje = sc.nextLine();
+			} while (!Util.consultaValida(urlImagenViaje));
+
+			bbdd.editarViaje(viaje, nombreViaje, fechaInicioViaje, fechaFinViaje, urlImagenViaje);
+			System.out.println("Viaje modificado con éxito :)\n");
+			bbdd.mostrarItinerario(viaje);
+		}
 	}
 
 	public void deleteViaje() throws SQLException {
 		System.out.println("------------- Eliminar Viaje -------------");
 		String idViaje = "";
 		do {
-			System.out.print("Id del viaje: ");
+			System.out.print("Id del viaje*: ");
 			idViaje = sc.nextLine();
 		} while (!Util.esEntero(idViaje));
 
 		if (!bbdd.buscarViajeUsuario(user, Integer.parseInt(idViaje))) {
 			System.out.println("El viaje no existe");
+			System.out.println("Volviendo atrás...\n");
 		} else {
 			System.out.println("Eliminando viaje " + idViaje + "...");
 			bbdd.eliminarViaje(Integer.parseInt(idViaje));
-			System.out.println("Viaje eliminado con éxito :)");
+			System.out.println("Viaje eliminado con éxito :)\n");
 		}
 	}
 
-	public void addAlojamiento() {
+	public void addAlojamiento() throws SQLException {
+		System.out.println("------------- Añadir Alojamiento -------------");
 
+		String idViaje = "";
+		do {
+			System.out.print("Id del viaje*: ");
+			idViaje = sc.nextLine();
+		} while (!Util.esEntero(idViaje));
+
+		if (!bbdd.buscarViajeUsuario(user, Integer.parseInt(idViaje))) {
+			System.out.println("El viaje no existe");
+			System.out.println("Volviendo atrás...\n");
+		} else {
+			viaje = Integer.parseInt(idViaje);
+			bbdd.mostrarItinerario(viaje);
+			String nombreAlojamiento = "";
+			do {
+				System.out.print("Nombre*: ");
+				nombreAlojamiento = sc.nextLine();
+			} while (nombreAlojamiento.isEmpty() || !Util.consultaValida(nombreAlojamiento));
+			String direccion = "";
+			do {
+				System.out.print("Direccion*: ");
+				direccion = sc.nextLine();
+			} while (direccion.isEmpty() || !Util.consultaValida(direccion));
+
+			String ciudad = "";
+			do {
+				System.out.print("Ciudad: ");
+				ciudad = sc.nextLine();
+			} while (!Util.consultaValida(ciudad));
+			String pais = "";
+			do {
+				System.out.print("Pais: ");
+				pais = sc.nextLine();
+			} while (!Util.consultaValida(pais));
+
+			String fechaEntrada = "";
+			String fechaSalida = "";
+			String fechaInicioViaje = bbdd.getFechaInicioViaje(viaje);
+			String fechaFinViaje = bbdd.getFechaFinViaje(viaje);
+			do {
+				do {
+					System.out.print("Fecha de entrada* (aaaa-mm-dd): ");
+					fechaEntrada = sc.nextLine();
+					if (!Util.entraRangoFechas(fechaEntrada, fechaInicioViaje, fechaFinViaje)) {
+						System.out.println("La fecha no se encuentra en el rango del viaje");
+					}
+				} while (!Util.entraRangoFechas(fechaEntrada, fechaInicioViaje, fechaFinViaje));
+				do {
+					System.out.print("Fecha de salida* (aaaa-mm-dd): ");
+					fechaSalida = sc.nextLine();
+					if (!Util.entraRangoFechas(fechaSalida, fechaInicioViaje, fechaFinViaje)) {
+						System.out.println("La fecha no se encuentra en el rango del viaje");
+					}
+				} while (!Util.entraRangoFechas(fechaSalida, fechaInicioViaje, fechaFinViaje));
+			} while (!Util.rangoFechasValido(fechaEntrada, fechaSalida));
+
+			String contacto = "";
+			do {
+				System.out.print("Contacto: ");
+				contacto = sc.nextLine();
+			} while (!Util.consultaValida(contacto));
+			String notas = "";
+			do {
+				System.out.print("Notas: ");
+				notas = sc.nextLine();
+			} while (!Util.consultaValida(notas));
+
+			bbdd.crearAlojamiento(viaje, nombreAlojamiento, direccion, ciudad, pais, fechaEntrada, fechaSalida,
+					contacto, notas);
+			System.out.println("Alojamiento añadido con éxito :)\n");
+		}
+	}
+
+	public void readAlojamiento() throws SQLException {
+		System.out.println("------------- Ver Alojamientos del Viaje -------------");
+		String idViaje = "";
+		do {
+			System.out.print("Id del viaje*: ");
+			idViaje = sc.nextLine();
+		} while (!Util.esEntero(idViaje));
+
+		if (!bbdd.buscarViajeUsuario(user, Integer.parseInt(idViaje))) {
+			System.out.println("El viaje no existe");
+			System.out.println("Volviendo atrás...\n");
+		} else {
+			viaje = Integer.parseInt(idViaje);
+			System.out.println("Accediendo al viaje " + viaje + "...\n");
+			bbdd.mostrarAlojamientos(viaje);
+		}
 	}
 
 	public void menuItinerario() throws SQLException {
@@ -294,6 +449,7 @@ public class Apus {
 			uploadFoto();
 			break;
 		case "4":
+			deleteActividad();
 			break;
 		case "salir":
 			exit = true;
@@ -306,32 +462,42 @@ public class Apus {
 		System.out.println("------------- Crear Actividad -------------");
 		String fechaActividad = "";
 		do {
-			System.out.print("Fecha de la actividad (aaaa-mm-dd): ");
+			System.out.print("Fecha de la actividad* (aaaa-mm-dd): ");
 			fechaActividad = sc.nextLine();
 		} while (!Util.fechaValida(fechaActividad));
 
-		int idItinerario = bbdd.idItinerario(viaje, fechaActividad);
+		int idItinerario = bbdd.getIdItinerario(viaje, fechaActividad);
 		if (idItinerario == 0) {
 			System.out.println("La fecha no corresponde con el viaje indicado");
+			System.out.println("Volviendo atrás...\n");
 		} else {
-			System.out.print("Direccion: ");
-			String direccion = sc.nextLine();
-			System.out.print("Ciudad: ");
-			String ciudad = sc.nextLine();
-			System.out.print("Pais: ");
-			String pais = sc.nextLine();
+			String direccion = "";
+			do {
+				System.out.print("Direccion*: ");
+				direccion = sc.nextLine();
+			} while (direccion.isEmpty() || !Util.consultaValida(direccion));
+			String ciudad = "";
+			do {
+				System.out.print("Ciudad: ");
+				ciudad = sc.nextLine();
+			} while (!Util.consultaValida(ciudad));
+			String pais = "";
+			do {
+				System.out.print("Pais: ");
+				pais = sc.nextLine();
+			} while (!Util.consultaValida(pais));
 			String time = "";
 			do {
-				System.out.print("Hora de inicio (hh:mm:ss): ");
+				System.out.print("Hora de inicio* (hh:mm:ss): ");
 				time = sc.nextLine();
 			} while (!Util.timeValido(time));
 			String duracion = "";
 			do {
 				System.out.print("Duracion (hh:mm:ss): ");
 				duracion = sc.nextLine();
-			} while (!Util.timeValido(duracion));
+			} while (!duracion.isEmpty() && !Util.timeValido(duracion));
 			bbdd.crearActividad(direccion, ciudad, pais, time, duracion, idItinerario);
-			System.out.println("Actividad creada con éxito :)");
+			System.out.println("Actividad creada con éxito :)\n");
 		}
 
 	}
@@ -340,20 +506,27 @@ public class Apus {
 		System.out.println("------------- Subir foto -------------");
 		String fechaActividad = "";
 		do {
-			System.out.print("Fecha de la actividad (aaaa-mm-dd): ");
+			System.out.print("Fecha de la actividad* (aaaa-mm-dd): ");
 			fechaActividad = sc.nextLine();
 		} while (!Util.fechaValida(fechaActividad));
 
-		int idItinerario = bbdd.idItinerario(viaje, fechaActividad);
+		int idItinerario = bbdd.getIdItinerario(viaje, fechaActividad);
 		if (idItinerario == 0) {
 			System.out.println("La fecha no corresponde con el viaje indicado");
+			System.out.println("Volviendo atrás...\n");
 		} else {
-			System.out.print("Nombre: ");
-			String nombre = sc.nextLine();
-			System.out.print("Ruta: ");
-			String ruta = sc.nextLine();
+			String nombre = "";
+			do {
+				System.out.print("Nombre: ");
+				nombre = sc.nextLine();
+			} while (!Util.consultaValida(nombre));
+			String ruta = "";
+			do {
+				System.out.print("Ruta*: ");
+				ruta = sc.nextLine();
+			} while (ruta.isEmpty() || !Util.consultaValida(ruta));
 			bbdd.subirFoto(nombre, ruta, idItinerario);
-			System.out.println("Foto subida con éxito :)");
+			System.out.println("Foto subida con éxito :)\n");
 		}
 	}
 
@@ -361,45 +534,109 @@ public class Apus {
 		System.out.println("------------- Subir Billete -------------");
 		String fechaActividad = "";
 		do {
-			System.out.print("Fecha de la actividad (aaaa-mm-dd): ");
+			System.out.print("Fecha de la actividad* (aaaa-mm-dd): ");
 			fechaActividad = sc.nextLine();
 		} while (!Util.fechaValida(fechaActividad));
 
-		int idItinerario = bbdd.idItinerario(viaje, fechaActividad);
+		int idItinerario = bbdd.getIdItinerario(viaje, fechaActividad);
 		if (idItinerario == 0) {
 			System.out.println("La fecha no corresponde con el viaje indicado");
+			System.out.println("Volviendo atrás...\n");
 		} else {
-			System.out.print("Nombre: ");
-			String nombre = sc.nextLine();
-			System.out.print("Trasporte: ");
-			String transporte = sc.nextLine();
-			System.out.print("Origen: ");
-			String origen = sc.nextLine();
-			System.out.print("Destino: ");
-			String destino = sc.nextLine();
+
+			String nombre = "";
+			do {
+				System.out.print("Nombre*: ");
+				nombre = sc.nextLine();
+			} while (nombre.isEmpty() || !Util.consultaValida(nombre));
+			String transporte = "";
+			do {
+				System.out.print("Trasporte: ");
+				transporte = sc.nextLine();
+			} while (!Util.consultaValida(transporte));
+			String origen = "";
+			do {
+				System.out.print("Origen*: ");
+				origen = sc.nextLine();
+			} while (origen.isEmpty() || !Util.consultaValida(origen));
+			String destino = "";
+			do {
+				System.out.print("Destino*: ");
+				destino = sc.nextLine();
+			} while (destino.isEmpty() || !Util.consultaValida(destino));
 			String horaSalida = "";
 			do {
-				System.out.print("Hora de salida (hh:mm:ss): ");
+				System.out.print("Hora de salida* (hh:mm:ss): ");
 				horaSalida = sc.nextLine();
 			} while (!Util.timeValido(horaSalida));
 			String horaLlegada = "";
 			do {
 				System.out.print("Hora de llegada (hh:mm:ss): ");
 				horaLlegada = sc.nextLine();
-			} while (!Util.timeValido(horaLlegada));
-			System.out.print("Compañía: ");
-			String compania = sc.nextLine();
-			System.out.print("Identificador: ");
-			String identificador = sc.nextLine();
-			System.out.print("Ruta: ");
-			String ruta = sc.nextLine();
+			} while (!horaLlegada.isEmpty() && !Util.timeValido(horaLlegada));
+			String compania = "";
+			do {
+				System.out.print("Compañía: ");
+				compania = sc.nextLine();
+			} while (!Util.consultaValida(compania));
+			String identificador = "";
+			do {
+				System.out.print("Identificador: ");
+				identificador = sc.nextLine();
+			} while (!Util.consultaValida(identificador));
+
+			String ruta = "";
+			do {
+				System.out.print("Ruta*: ");
+				ruta = sc.nextLine();
+			} while (ruta.isEmpty() || !Util.consultaValida(ruta));
 			bbdd.subirBillete(nombre, transporte, origen, destino, horaSalida, horaLlegada, compania, identificador,
 					ruta, idItinerario);
-			System.out.println("Foto subida con éxito :)");
+			System.out.println("Foto subida con éxito :)\n");
 		}
 	}
 
-	public void deleteActividad() {
+	public boolean readActividad() throws SQLException {
+		System.out.println("------------- Actividades del Itinerario -------------");
 
+		String fechaItinerario = "";
+		do {
+			System.out.print("Fecha del itinerario* (aaaa-mm-dd): ");
+			fechaItinerario = sc.nextLine();
+		} while (!Util.fechaValida(fechaItinerario));
+
+		itinerario = bbdd.getIdItinerario(viaje, fechaItinerario);
+		if (itinerario == 0) {
+			System.out.println("La fecha no corresponde con el viaje indicado");
+			System.out.println("Volviendo atrás...\n");
+			return false;
+		} else {
+			System.out.println("Accediendo al itinerario del día " + fechaItinerario + "...\n");
+			if (!bbdd.mostrarActividad(itinerario)) {
+				System.out.println("Volviendo atrás...\n");
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public void deleteActividad() throws SQLException {
+		if (!readActividad()) {
+			return;
+		}
+
+		System.out.println("------------- Eliminar Actividad -------------");
+		String idActividad = "";
+		do {
+			System.out.print("Id de la actividad*: ");
+			idActividad = sc.nextLine();
+		} while (!Util.esEntero(idActividad));
+
+		if (!bbdd.eliminarActividad(itinerario, Integer.parseInt(idActividad))) {
+			System.out.println("La actividad especificada no corresponde al itinerario");
+			System.out.println("Volviendo atrás...\n");
+			return;
+		}
+		System.out.println("Actividad eliminada con éxito :)\n");
 	}
 }
