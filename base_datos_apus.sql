@@ -60,10 +60,13 @@ foreign key(id_viaje) references viaje(id)
 
 create table actividad(
 id int primary key auto_increment,
+titulo varchar(100) not null,
+descripcion varchar(500),
 direccion varchar(100) not null,
 ciudad varchar(100),
 pais varchar(100),
 hora_inicio time not null,
+hora_fin time,
 duracion time,
 id_itinerario int,
 foreign key(id_itinerario) references itinerario(id)
