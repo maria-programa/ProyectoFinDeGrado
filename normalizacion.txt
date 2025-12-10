@@ -1,16 +1,16 @@
-usuario(#id,nombre,nombreUsuario,contrasenna,correoElectronico,imagen)
+usuario(#id,nombre,nombre_usuario,contrasenna,correo_electronico,imagen)
 
 usuario_usuario(#-(id_usuario1,id_usuario2))
 usuario_viaje(#-(id_usuario,id_viaje))
 
-viaje(#id,fechaCreacion,nombre,fechaInicio,fechaFin,imagen,creador)
+viaje(#id,fecha_creacion,nombre,fecha_inicio,fecha_fin,imagen,creador)
 
-alojamiento(#id,direccion,pais,ciudad,fechaEntrada,fechaSalida,nombre,contacto,notas,-(id_viaje))
+alojamiento(#id,direccion,pais,ciudad,fecha_entrada,fecha_salida,nombre,contacto,notas,-(id_viaje))
 
 itinerario(#id,fecha-(id_viaje))
 
-foto(#id,nombre,rutaArchivo,-(id_itinerario))
+foto(#id,nombre,ruta_archivo,-(id_itinerario))
 
-actividad(#id,titulo,descripcion,horaInicio,horaFin,direccion,ciudad,pais,duracion-(id_itinerario))
+actividad(#id,titulo,descripcion,hora_inicio,hora_fin,direccion,ciudad,pais,duracion-(id_itinerario))
 
-billete(#id,rutaArchivo,nombre,transporte,origen,destino,horaSalida,horaLlegada,compannia,identificador,-(id_itinerario))
+billete(#id,ruta_archivo,nombre,transporte,origen,destino,hora_salida,hora_llegada,compannia,identificador,-(id_itinerario))
