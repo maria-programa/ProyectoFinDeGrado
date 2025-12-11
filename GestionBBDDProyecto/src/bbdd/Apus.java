@@ -201,11 +201,11 @@ public class Apus {
 							+ "3.- Añadir Alojamiento\n" + "4.- Ver Alojamientos\n" + "5.- Editar viaje\n"
 							+ "6.- Eliminar viaje\n" + "- Salir -\n" + "Opcion: ");
 					opcion = sc.nextLine().toLowerCase();
-					if (!Util.esOpcionValida(1, 5, opcion)) {
+					if (!Util.esOpcionValida(1, 6, opcion)) {
 						System.out.println("Opción no válida");
 					}
 					System.out.println();
-				} while (!Util.esOpcionValida(1, 5, opcion));
+				} while (!Util.esOpcionValida(1, 6, opcion));
 			}
 
 			switch (opcion) {
