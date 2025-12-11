@@ -5,6 +5,7 @@ import java.time.LocalDate;
 
 public class Util {
 
+	// Indica si la opción
 	public static boolean esOpcionValida(int inicio, int last, String opcion) {
 		if (esEntero(opcion)) {
 			int numero = Integer.parseInt(opcion);
@@ -88,9 +89,5 @@ public class Util {
 		return (date.isAfter(dateInicio) && date.isBefore(dateFin)) || date.isEqual(dateInicio)
 				|| date.isEqual(dateFin);
 	}
-
-//	public static boolean entraRangoFechas(LocalDate fecha, LocalDate fechaInicio, LocalDate fechaFin) {
-//
-//	}
 
 }

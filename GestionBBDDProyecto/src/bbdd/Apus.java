@@ -7,11 +7,11 @@ import java.util.Scanner;
 
 public class Apus {
 	private Scanner sc;
-	private ConsultasApus bbdd;
-	private String user;
-	private int viaje;
-	private boolean exit;
-	private int itinerario;
+	private ConsultasApus bbdd; // Objeto que guarda la conexion y hace las consultas a bbdd
+	private String user; // Guarda el usuario que ha accedido
+	private int viaje; // Guarda el viaje al que accede cada vez
+	private boolean exit; // Para salir de la app
+	private int itinerario; // Itinerario al que accede cada vez
 
 	public static final String BBDD = "apus";
 	public static final String USER = "root";
@@ -29,6 +29,9 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Conectamos con el servidor y la base de datos
+	 */
 	private void conect() throws SQLException {
 		System.out.println("Estableciendo conexión con APUS");
 		Connection connection = DriverManager.getConnection(SERVER + BBDD, USER, PWD);
@@ -36,23 +39,33 @@ public class Apus {
 		System.out.println("CONECTADO");
 	}
 
+	/*
+	 * Iniciamos la applicación
+	 */
 	private void init() throws SQLException {
 		System.out.println("************* BIENVENIDO A APUS *************");
 		sc = new Scanner(System.in);
+		// Menú para iniciar sesión o salir
 		mainMenu();
 		if (exit) {
 			return;
 		}
+		// Menú para trabajar sobre el viaje o salir de la app
 		menuViajes();
 		if (exit) {
 			return;
 		}
 	}
 
+	/*
+	 * Menú para iniciar sesión o registrarse
+	 */
 	private void mainMenu() throws SQLException {
 		String opcion = "";
 		boolean access = false;
+		// Se ejecuta mientras el acceso no sea correcto y no se quiera salir
 		do {
+			// Ejecuta mientras no introduzca una opción válida (1-2 o salir)
 			do {
 				System.out.print(
 						"Escoja una opción:\n" + "1.- Acceder\n" + "2.- Registrarse\n" + "- Salir -\n" + "Opcion: ");
@@ -68,11 +81,13 @@ public class Apus {
 			// SWITCH DE REGISTRO O ACCESO
 			switch (opcion) {
 			case "1":
+				// El usuario accede con una cuenta ya registrada
 				userAccess(pwd, userApus);
 				System.out.println();
 				access = true;
 				break;
 			case "2":
+				// El usuario se registra
 				userRegister(pwd, userApus);
 				access = true;
 				break;
@@ -83,6 +98,9 @@ public class Apus {
 		} while (!exit && !access);
 	}
 
+	/*
+	 * El usuario accede con cuenta ya existente
+	 */
 	private void userAccess(String pwd, String userApus) throws SQLException {
 		boolean access = false;
 		do {
@@ -104,6 +122,9 @@ public class Apus {
 		} while (!access);
 	}
 
+	/*
+	 * El usuario se registra con un correo y nombre_usuario unico
+	 */
 	private void userRegister(String pwd, String userApus) throws SQLException {
 		String correo = "";
 		String nombre = "";
@@ -115,7 +136,7 @@ public class Apus {
 		do {
 			System.out.print("Correo electrónico*: ");
 			correo = sc.nextLine();
-			if (!Util.consultaValida(correo)) {
+			if (!Util.consultaValida(correo)) { // Consulta válida no permite "delete" ni ";"
 				System.out.println("Por favor introduzca un nombre válido");
 				continue;
 			}
@@ -157,16 +178,22 @@ public class Apus {
 			urlImagen = sc.nextLine();
 		} while (!Util.consultaValida(urlImagen));
 
+		// Creamos usuario
 		bbdd.crearUsuario(correo, user, pwd, nombre, urlImagen);
 	}
 
+	/*
+	 * Menú para trabajar sobre los viajes de cada usuario sólo se accede si se ha
+	 * iniciado sesión o registrado correctamente
+	 */
 	private void menuViajes() throws SQLException {
 		System.out.println("Accediendo a los viajes de " + user + "...");
 		do {
+			// mostramos los viajes del usuario en caso de no tener no muestra nada
 			boolean tieneViajes = bbdd.mostrarViajesUsuario(user);
 
 			String opcion = "";
-			if (!tieneViajes) {
+			if (!tieneViajes) { // Si no tiene viajes omite el menú y le obliga a crearlo
 				opcion = "1";
 			} else {
 				do {
@@ -186,6 +213,7 @@ public class Apus {
 				createViaje();
 				break;
 			case "2":
+				// mostrar itinerario
 				if (readViaje()) {
 					menuItinerario();
 				}
@@ -210,6 +238,9 @@ public class Apus {
 
 	}
 
+	/*
+	 * El usuario crea un viaje Campos * obligatorios
+	 */
 	public void createViaje() throws SQLException {
 		System.out.println("------------- Crear Viaje -------------");
 
@@ -226,6 +257,7 @@ public class Apus {
 			fechaInicioViaje = sc.nextLine();
 			System.out.print("Fecha de fin* (aaaa-mm-dd): ");
 			fechaFinViaje = sc.nextLine();
+			// Comprobamos que la fechaIncial y final cumplen su definición
 		} while (!Util.rangoFechasValido(fechaInicioViaje, fechaFinViaje));
 
 		String urlImagenViaje = "";
@@ -233,10 +265,15 @@ public class Apus {
 			System.out.print("Imagen: ");
 			urlImagenViaje = sc.nextLine();
 		} while (!Util.consultaValida(urlImagenViaje));
+		// Crea el viaje
 		bbdd.crearViaje(user, nombreViaje, fechaInicioViaje, fechaFinViaje, urlImagenViaje);
 		System.out.println("Viaje creado con éxito :)\n");
 	}
 
+	/*
+	 * Accedemos al viaje del usuario si el viaje indicado no corresponde a sus
+	 * viajes return false, sino muestra el viaje
+	 */
 	public boolean readViaje() throws SQLException {
 		System.out.println("------------- Ver Viaje -------------");
 		String idViaje = "";
@@ -257,6 +294,9 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Edita el viaje, campos vacíos --> No se modifica
+	 */
 	public void updateViaje() throws SQLException {
 		System.out.println("------------- Editar Viaje -------------");
 		String idViaje = "";
@@ -291,6 +331,7 @@ public class Apus {
 				System.out.print("Fecha de fin (aaaa-mm-dd): ");
 				fechaFinViaje = sc.nextLine();
 
+				// Comprueba si el rango es valido en caso de cambiar alguna fecha
 				if (!fechaInicioViaje.isEmpty() && !fechaFinViaje.isEmpty()
 						&& !Util.rangoFechasValido(fechaInicioViaje, fechaFinViaje)) {
 					rangoValido = false;
@@ -309,12 +350,16 @@ public class Apus {
 				urlImagenViaje = sc.nextLine();
 			} while (!Util.consultaValida(urlImagenViaje));
 
+			// Hace update del viaje
 			bbdd.editarViaje(viaje, nombreViaje, fechaInicioViaje, fechaFinViaje, urlImagenViaje);
 			System.out.println("Viaje modificado con éxito :)\n");
 			bbdd.mostrarItinerario(viaje);
 		}
 	}
 
+	/*
+	 * Elimina el viaje si existe y el usuario teine acceso a él
+	 */
 	public void deleteViaje() throws SQLException {
 		System.out.println("------------- Eliminar Viaje -------------");
 		String idViaje = "";
@@ -333,6 +378,10 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Añade el alojamiento al viaje, comprueba si el viaje es del usuario Campos *
+	 * obligatorios
+	 */
 	public void addAlojamiento() throws SQLException {
 		System.out.println("------------- Añadir Alojamiento -------------");
 
@@ -375,6 +424,8 @@ public class Apus {
 			String fechaInicioViaje = bbdd.getFechaInicioViaje(viaje);
 			String fechaFinViaje = bbdd.getFechaFinViaje(viaje);
 			do {
+				// Comprobamos que la fecha de entrada va antes a la de salida y que mbas se
+				// encuentran dentro del rango de fechas del viaje
 				do {
 					System.out.print("Fecha de entrada* (aaaa-mm-dd): ");
 					fechaEntrada = sc.nextLine();
@@ -408,6 +459,9 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Muestra los Alojamientos del viaje comprueba si el viaje es del usuario
+	 */
 	public void readAlojamiento() throws SQLException {
 		System.out.println("------------- Ver Alojamientos del Viaje -------------");
 		String idViaje = "";
@@ -426,6 +480,9 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Muestra el menú del itinerario
+	 */
 	public void menuItinerario() throws SQLException {
 		String opcion = "";
 		do {
@@ -458,6 +515,10 @@ public class Apus {
 
 	}
 
+	/*
+	 * Crea una actividad, según la fecha indicada, comprueba que la fecha pertenece
+	 * al viaje
+	 */
 	public void createActividad() throws SQLException {
 		System.out.println("------------- Crear Actividad -------------");
 		String fechaActividad = "";
@@ -471,6 +532,16 @@ public class Apus {
 			System.out.println("La fecha no corresponde con el viaje indicado");
 			System.out.println("Volviendo atrás...\n");
 		} else {
+			String titulo = "";
+			do {
+				System.out.print("Titulo*: ");
+				titulo = sc.nextLine();
+			} while (titulo.isEmpty() || !Util.consultaValida(titulo));
+			String descripcion = "";
+			do {
+				System.out.print("Descripcion: ");
+				descripcion = sc.nextLine();
+			} while (!Util.consultaValida(descripcion));
 			String direccion = "";
 			do {
 				System.out.print("Direccion*: ");
@@ -486,22 +557,27 @@ public class Apus {
 				System.out.print("Pais: ");
 				pais = sc.nextLine();
 			} while (!Util.consultaValida(pais));
-			String time = "";
+			String horaInicio = "";
 			do {
 				System.out.print("Hora de inicio* (hh:mm:ss): ");
-				time = sc.nextLine();
-			} while (!Util.timeValido(time));
-			String duracion = "";
+				horaInicio = sc.nextLine();
+			} while (!Util.timeValido(horaInicio));
+			String horaFin = "";
 			do {
-				System.out.print("Duracion (hh:mm:ss): ");
-				duracion = sc.nextLine();
-			} while (!duracion.isEmpty() && !Util.timeValido(duracion));
-			bbdd.crearActividad(direccion, ciudad, pais, time, duracion, idItinerario);
+				System.out.print("Hora de fin (hh:mm:ss): ");
+				horaFin = sc.nextLine();
+				// Comprobamos rango de horas porque debe ser en el mismo día
+			} while (!horaFin.isEmpty() && (!Util.timeValido(horaFin) || !Util.rangoTimeValido(horaInicio, horaFin)));
+			bbdd.crearActividad(titulo, descripcion, direccion, ciudad, pais, horaInicio, horaFin, idItinerario);
 			System.out.println("Actividad creada con éxito :)\n");
 		}
 
 	}
 
+	/*
+	 * Crea una foto, comprueba que la fecha del itinerario indicado pertenece al
+	 * viaje, campos * obligatorios
+	 */
 	public void uploadFoto() throws SQLException {
 		System.out.println("------------- Subir foto -------------");
 		String fechaActividad = "";
@@ -530,6 +606,10 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Crea una billete, comprueba que la fecha del itinerario indicado pertenece al
+	 * viaje, campos * obligatorios
+	 */
 	public void uploadBillete() throws SQLException {
 		System.out.println("------------- Subir Billete -------------");
 		String fechaActividad = "";
@@ -596,6 +676,11 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Muestra las actividades del itinerario según la fecha, comprueba que la fecha
+	 * corresponde al viaje del usuario, boolean para el metodo deleteActividad no
+	 * me deje eliminar
+	 */
 	public boolean readActividad() throws SQLException {
 		System.out.println("------------- Actividades del Itinerario -------------");
 
@@ -620,6 +705,10 @@ public class Apus {
 		}
 	}
 
+	/*
+	 * Muestra las actividades y si true Elimina Actividad comprobando que pertenece
+	 * al itinerario
+	 */
 	public void deleteActividad() throws SQLException {
 		if (!readActividad()) {
 			return;
@@ -639,4 +728,5 @@ public class Apus {
 		}
 		System.out.println("Actividad eliminada con éxito :)\n");
 	}
+
 }
