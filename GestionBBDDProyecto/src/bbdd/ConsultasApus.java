@@ -120,7 +120,7 @@ public class ConsultasApus {
 		PreparedStatement ps = conexion.prepareStatement(consulta);
 		ResultSet res = ps.executeQuery();
 
-		return res.last() ? res.getInt(1) : null;
+		return res.last() ? res.getInt(1) : 0;
 	}
 	// ///////////////////////////////////////////////////////////////////////////////////////////
 
